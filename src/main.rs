@@ -1,3 +1,9 @@
+use crate::helper_methods::fetch_recipes;
+
+mod helper_methods;
+mod tests;
+
 fn main() {
-    println!("Hello, world!");
+    let recipes = fetch_recipes();
+    println!("{:?}", recipes);
 }
