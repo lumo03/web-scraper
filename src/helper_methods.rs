@@ -1,19 +1,22 @@
 #[path = "types.rs"]
 mod types;
 use regex::Regex;
+use reqwest::Client;
 
 use self::types::{Difficulty, Recipe};
 
 const URL: &str = "https://cookidoo.de/foundation/de-DE";
 const RECIPE_URL: &str = "https://cookidoo.de/recipes/recipe/de-DE/";
 
-pub fn fetch_recipes() -> Vec<Recipe> {
-    let ids = fetch_recipe_ids();
-    get_recipes(&ids)
+pub async fn fetch_recipes() -> Vec<Recipe> {
+    let ids = fetch_recipe_ids().await;
+    get_recipes(&ids).await
 }
 
-pub fn fetch_recipe_ids() -> Vec<String> {
-    let response = reqwest::blocking::get(URL).unwrap().text().unwrap();
+pub async fn fetch_recipe_ids() -> Vec<String> {
+    let client = Client::new();
+
+    let response = client.get(URL).send().await.unwrap().text().await.unwrap();
 
     let document = scraper::Html::parse_document(&response);
 
@@ -33,24 +36,28 @@ pub fn fetch_recipe_ids() -> Vec<String> {
     ids
 }
 
-pub fn get_recipes(ids: &Vec<String>) -> Vec<Recipe> {
+pub async fn get_recipes(ids: &Vec<String>) -> Vec<Recipe> {
     let mut recipes: Vec<Recipe> = Vec::new();
     for id in ids {
-        let recipe = get_recipe(id);
+        let recipe = get_recipe(id).await;
         recipes.push(recipe);
     }
     recipes
 }
 
-pub fn get_recipe(id: &str) -> Recipe {
-    let recipe_as_string = get_recipe_as_string(id);
+pub async fn get_recipe(id: &str) -> Recipe {
+    let recipe_as_string = get_recipe_as_string(id).await;
     extract_recipe_info(id, recipe_as_string)
 }
 
-pub fn get_recipe_as_string(id: &str) -> String {
-    reqwest::blocking::get(format!("{}{}", RECIPE_URL, id))
+pub async fn get_recipe_as_string(id: &str) -> String {
+    let client = Client::new();
+    client.get(format!("{}{}", RECIPE_URL, id))
+        .send()
+        .await
         .unwrap()
         .text()
+        .await
         .unwrap()
 }
 
